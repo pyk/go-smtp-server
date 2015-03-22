@@ -18,21 +18,21 @@ type SMTPserver struct {
 	Wg       *sync.WaitGroup
 }
 
-func (tcps *SMTPserver) Run() {
-	defer tcps.Wg.Done()
+func (smtps *SMTPserver) Run() {
+	defer smtps.Wg.Done()
 	for {
 		select {
-		case <-tcps.Stoped:
-			log.Println("smtpserver: stopping listening on", tcps.Listener.Addr())
-			tcps.Listener.Close()
+		case <-smtps.Stoped:
+			log.Println("smtpserver: stopping listening on", smtps.Listener.Addr())
+			smtps.Listener.Close()
 			return
 		default:
 		}
 
 		// make sure listener.AcceptTCP() doesn't block forever
 		// so it can read a stopped channel
-		tcps.Listener.SetDeadline(time.Now().Add(1e9))
-		conn, err := tcps.Listener.AcceptTCP()
+		smtps.Listener.SetDeadline(time.Now().Add(1e9))
+		conn, err := smtps.Listener.AcceptTCP()
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 				continue
@@ -40,15 +40,15 @@ func (tcps *SMTPserver) Run() {
 			log.Println(err)
 		}
 
-		tcps.Wg.Add(1)
-		s := session.New(conn, tcps.Wg, tcps.Stoped)
+		smtps.Wg.Add(1)
+		s := session.New(conn, smtps.Wg, smtps.Stoped)
 		go s.Serve()
 	}
 }
 
-func (tcps *SMTPserver) Stop() {
-	close(tcps.Stoped)
-	tcps.Wg.Wait()
+func (smtps *SMTPserver) Stop() {
+	close(smtps.Stoped)
+	smtps.Wg.Wait()
 }
 
 func main() {
